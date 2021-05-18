@@ -1,7 +1,35 @@
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-ORANGE='\033[0;33m'
 NC='\033[0m' # No Color
+RED='\033[0m'
+GREEN='\033[0m'
+ORANGE='\033[0m'
+
+stop=false
+
+_setArgs(){
+  while [ "$1" != "" ]; do
+    case $1 in
+      "-h" | "--help")
+        echo "options:"
+        echo "-h, --help         show brief help"
+        echo "-c, --color    (optional) add colors to output"
+        stop=true
+        ;;
+      "-c" | "--color")
+        shift
+        RED='\033[0;31m'
+        GREEN='\033[0;32m'
+        ORANGE='\033[0;33m'
+        ;;
+    esac
+    shift
+  done
+}
+
+_setArgs $*
+
+if "$stop"; then
+  return
+fi
 
 MINIMUM_TX_SIZE=109 # in virtual bytes, assuming no change output
 MINIMUM_TX_SIZE_CHANNEL_OPENING=121 # in virtual bytes, assuming no change output
@@ -61,4 +89,4 @@ fi
 
 echo -e "You opened ${ORANGE}$channels channels${NC}, closed ${RED}$closedChannels channels${NC} and made ${ORANGE}$paymentAmount lightning payments${NC} which results in ${ORANGE}$txPerOnchainTx transactions${NC} per on-chain transaction."
 echo -e "You used at least ${RED}$minimumSpaceUsed${NC} block space but saved at least ${GREEN}$minimumSpaceSaved${NC}."
-echo -e "You paid ${RED}$totalFeesPaid${NC} in lightning fees but saved at least ${GREEN}$minimumFeesSaved${NC} by using lightning over on-chain transactions."
+echo -e "You paid ${RED}$totalFeesPaid${NC} in lightning fees but saved at least ${GREEN}$minimumFeesSaved${NC} by using lightning."
