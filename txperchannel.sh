@@ -6,7 +6,7 @@ MEGABYTE=$(expr 1024 \* 1024)
 payments=$(lncli listpayments | jq -r '.payments' | jq length)
 channels=$(lncli listchannels | jq -r '[.channels[] | select(.initiator == true)]' | jq -r length)
 closedChannels=$(lncli closedchannels | jq -r '[.channels[] | select(.open_initiator == "INITIATOR_LOCAL")]' | jq -r length)
-let onchainTx="$channels"+"$closedChannels"
+let onchainTx="$channels"+"$closedChannels"*2
 let txPerOnchainTx="$payments"/"$onchainTx"
 let minimumSpaceUsed="$MINIMUM_TX_SIZE_CHANNEL_OPENING"*"$onchainTx"
 let minimumSpaceSaved="$MINIMUM_TX_SIZE"*"$payments-$minimumSpaceUsed"
