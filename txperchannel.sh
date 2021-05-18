@@ -9,7 +9,7 @@ closedChannels=$(lncli closedchannels | jq -r '[.channels[] | select(.open_initi
 let onchainTx="$channels"+"$closedChannels"
 let txPerOnchainTx="$payments"/"$onchainTx"
 let minimumSpaceUsed="$MINIMUM_TX_SIZE_CHANNEL_OPENING"*"$onchainTx"
-let minimumSpaceSaved="$MINIMUM_TX_SIZE"*"$payments"
+let minimumSpaceSaved="$MINIMUM_TX_SIZE"*"$payments-$minimumSpaceUsed"
 
 if [ "$minimumSpaceUsed" -ge "$MEGABYTE" ]; then
     minimumSpaceUsed=$(($minimumSpaceUsed / $MEGABYTE))
