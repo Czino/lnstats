@@ -29,5 +29,5 @@ elif [ "$minimumSpaceSaved" -ge "$KILOBYTE" ]; then
 else
     minimumSpaceSaved=$(echo "$minimumSpaceSaved vB")
 fi
-echo "You opened $channels channels, closed $closedChannels channels and made $payments payments which results in $txPerOnchainTx transactions per online transaction"
-echo "You used at least $minimumSpaceUsed blockspace but saved at least $minimumSpaceSaved"
+echo "You opened $channels channels, closed $closedChannels channels and made $payments lightning payments which results in $txPerOnchainTx transactions per onchain transaction"
+echo "You used at least $minimumSpaceUsed block space but saved at least $minimumSpaceSaved"
