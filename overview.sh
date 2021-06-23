@@ -38,7 +38,8 @@ MEGABYTE=$(expr 1024 \* 1024)
 ONEMILLION=1000000
 ONETHOUSAND=1000
 
-payments=$(lncli listpayments | jq -r '[.payments[] | select(.status == "SUCCEEDED")]')
+payments=$(lncli listpayments --max_payments 9999 | jq -r '[.payments[] | select(.status == "SUCCEEDED")]')
+onchainFees=$(lncli listchaintxns | jq -r '.transactions | map(.total_fees | tonumber) | add')
 paymentAmount=$(echo "$payments" | jq -r length)
 totalFeesPaid=$(echo "$payments" | jq -r '. | map(.fee_sat | tonumber) | add')
 channels=$(lncli listchannels | jq -r '[.channels[] | select(.initiator == true)]' | jq -r length)
@@ -48,6 +49,12 @@ let txPerOnchainTx="$paymentAmount"/"$onchainTx"
 let minimumSpaceUsed="$MINIMUM_TX_SIZE_CHANNEL_OPENING"*"$onchainTx"
 let minimumSpaceSaved="$MINIMUM_TX_SIZE"*"$paymentAmount"-"$minimumSpaceUsed"
 let minimumFeesSaved="$paymentAmount"*"$MINIMUM_TX_SIZE"-"$minimumSpaceUsed"
+let allFeesPaid="$onchainFees"+"$totalFeesPaid"
+
+paidMoreThanSaved=false
+if [ "$totalFeesPaid" -gt "$minimumFeesSaved"]; then
+    paidMoreThanSaved=true
+fi
 
 if [ "$minimumSpaceUsed" -ge "$MEGABYTE" ]; then
     minimumSpaceUsed=$(($minimumSpaceUsed / $MEGABYTE))
@@ -87,6 +94,22 @@ else
     minimumFeesSaved=$(echo "$minimumFeesSaved sats")
 fi
 
+
+if [ "$onchainFees" -ge "$ONEMILLION" ]; then
+    onchainFees=$(($onchainFees / $ONEMILLION))
+    onchainFees=$(echo "${onchainFees}M sats")
+elif [ "$onchainFees" -ge "$ONETHOUSAND" ]; then
+    onchainFees=$(($onchainFees / $ONETHOUSAND))
+    onchainFees=$(echo "${onchainFees}k sats")
+else
+    onchainFees=$(echo "$onchainFees sats")
+fi
+
 echo -e "You opened ${ORANGE}$channels channels${NC}, closed ${RED}$closedChannels channels${NC} and made ${ORANGE}$paymentAmount lightning payments${NC} which results in ${ORANGE}$txPerOnchainTx transactions${NC} per on-chain transaction."
 echo -e "You used at least ${RED}$minimumSpaceUsed${NC} block space but saved at least ${GREEN}$minimumSpaceSaved${NC}."
-echo -e "You paid ${RED}$totalFeesPaid${NC} in lightning fees but saved at least ${GREEN}$minimumFeesSaved${NC} by using lightning."
+echo -e "You paid ${RED}$onchainFees${NC} on-chain and ${RED}$totalFeesPaid${NC} in lightning fees but saved at least ${GREEN}$minimumFeesSaved${NC} by using lightning."
+if [[ $paidMoreThanSaved ]]; then
+   echo -e "${RED}You are currently spending more than you save${NC}"
+else
+   echo -e "${GREEN}You are saving sats, keep it going!${NC}"
+fi
