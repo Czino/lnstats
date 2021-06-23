@@ -38,10 +38,41 @@ MEGABYTE=$(expr 1024 \* 1024)
 ONEMILLION=1000000
 ONETHOUSAND=1000
 
+compactBytes() {
+  number="${1}"
+  if [ "$number" -ge "$MEGABYTE" ]; then
+    number=$(($number / $MEGABYTE))
+    number=$(echo "$number vMB")
+  elif [ "$number" -ge "$KILOBYTE" ]; then
+      number=$(($number / $KILOBYTE))
+      number=$(echo "$number vKB")
+  else
+      number=$(echo "$number vB")
+  fi
+  echo "$number"
+}
+
+compactSats() {
+  number="${1}"
+  if [ "$number" -ge "$ONEMILLION" ]; then
+    number=$(($number / $ONEMILLION))
+    number=$(echo "${number}M sats")
+  elif [ "$number" -ge "$ONETHOUSAND" ]; then
+      number=$(($number / $ONETHOUSAND))
+      number=$(echo "${number}k sats")
+  else
+      number=$(echo "$number sats")
+  fi
+  echo "$number"
+}
+
+
+
 payments=$(lncli listpayments --max_payments 9999 | jq -r '[.payments[] | select(.status == "SUCCEEDED")]')
 onchainFees=$(lncli listchaintxns | jq -r '.transactions | map(.total_fees | tonumber) | add')
 paymentAmount=$(echo "$payments" | jq -r length)
 totalFeesPaid=$(echo "$payments" | jq -r '. | map(.fee_sat | tonumber) | add')
+let totalFeesEarned="$(lncli fwdinghistory --max_events 10000 --start_time "-10y" | jq -r '.forwarding_events | map(.fee_msat | tonumber) | add')"/1000
 channels=$(lncli listchannels | jq -r '[.channels[] | select(.initiator == true)]' | jq -r length)
 closedChannels=$(lncli closedchannels | jq -r '[.channels[] | select(.open_initiator == "INITIATOR_LOCAL")]' | jq -r length)
 let onchainTx="$channels"+"$closedChannels"*2
@@ -50,66 +81,29 @@ let minimumSpaceUsed="$MINIMUM_TX_SIZE_CHANNEL_OPENING"*"$onchainTx"
 let minimumSpaceSaved="$MINIMUM_TX_SIZE"*"$paymentAmount"-"$minimumSpaceUsed"
 let minimumFeesSaved="$paymentAmount"*"$MINIMUM_TX_SIZE"-"$minimumSpaceUsed"
 let allFeesPaid="$onchainFees"+"$totalFeesPaid"
+let balance="$minimumFeesSaved"+"$totalFeesEarned"-"$allFeesPaid"
 
 paidMoreThanSaved=false
-if [ "$totalFeesPaid" -gt "$minimumFeesSaved"]; then
+if [ "$balance" -lt 0]; then
     paidMoreThanSaved=true
 fi
 
-if [ "$minimumSpaceUsed" -ge "$MEGABYTE" ]; then
-    minimumSpaceUsed=$(($minimumSpaceUsed / $MEGABYTE))
-    minimumSpaceUsed=$(echo "$minimumSpaceUsed vMB")
-elif [ "$minimumSpaceUsed" -ge "$KILOBYTE" ]; then
-    minimumSpaceUsed=$(($minimumSpaceUsed / $KILOBYTE))
-    minimumSpaceUsed=$(echo "$minimumSpaceUsed vKB")
-else
-    minimumSpaceUsed=$(echo "$minimumSpaceUsed vB")
-fi
-if [ "$minimumSpaceSaved" -ge "$MEGABYTE" ]; then
-    minimumSpaceSaved=$(($minimumSpaceSaved / $MEGABYTE))
-    minimumSpaceSaved=$(echo "$minimumSpaceSaved vMB")
-elif [ "$minimumSpaceSaved" -ge "$KILOBYTE" ]; then
-    minimumSpaceSaved=$(($minimumSpaceSaved / $KILOBYTE))
-    minimumSpaceSaved=$(echo "$minimumSpaceSaved vKB")
-else
-    minimumSpaceSaved=$(echo "$minimumSpaceSaved vB")
-fi
+minimumSpaceUsed=$(compactBytes "$minimumSpaceUsed")
+minimumSpaceSaved=$(compactBytes "$minimumSpaceSaved")
 
-if [ "$totalFeesPaid" -ge "$ONEMILLION" ]; then
-    totalFeesPaid=$(($totalFeesPaid / $ONEMILLION))
-    totalFeesPaid=$(echo "${totalFeesPaid}M sats")
-elif [ "$totalFeesPaid" -ge "$ONETHOUSAND" ]; then
-    totalFeesPaid=$(($totalFeesPaid / $ONETHOUSAND))
-    totalFeesPaid=$(echo "${totalFeesPaid}k sats")
-else
-    totalFeesPaid=$(echo "$totalFeesPaid sats")
-fi
-if [ "$minimumFeesSaved" -ge "$ONEMILLION" ]; then
-    minimumFeesSaved=$(($minimumFeesSaved / $ONEMILLION))
-    minimumFeesSaved=$(echo "${minimumFeesSaved}M sats")
-elif [ "$minimumFeesSaved" -ge "$ONETHOUSAND" ]; then
-    minimumFeesSaved=$(($minimumFeesSaved / $ONETHOUSAND))
-    minimumFeesSaved=$(echo "${minimumFeesSaved}k sats")
-else
-    minimumFeesSaved=$(echo "$minimumFeesSaved sats")
-fi
-
-
-if [ "$onchainFees" -ge "$ONEMILLION" ]; then
-    onchainFees=$(($onchainFees / $ONEMILLION))
-    onchainFees=$(echo "${onchainFees}M sats")
-elif [ "$onchainFees" -ge "$ONETHOUSAND" ]; then
-    onchainFees=$(($onchainFees / $ONETHOUSAND))
-    onchainFees=$(echo "${onchainFees}k sats")
-else
-    onchainFees=$(echo "$onchainFees sats")
-fi
+totalFeesPaid=$(compactSats "$totalFeesPaid")
+totalFeesEarned=$(compactSats "$totalFeesEarned")
+minimumFeesSaved=$(compactSats "$minimumFeesSaved")
+onchainFees=$(compactSats "$onchainFees")
+balance=$(compactSats "$balance")
 
 echo -e "You opened ${ORANGE}$channels channels${NC}, closed ${RED}$closedChannels channels${NC} and made ${ORANGE}$paymentAmount lightning payments${NC} which results in ${ORANGE}$txPerOnchainTx transactions${NC} per on-chain transaction."
 echo -e "You used at least ${RED}$minimumSpaceUsed${NC} block space but saved at least ${GREEN}$minimumSpaceSaved${NC}."
 echo -e "You paid ${RED}$onchainFees${NC} on-chain and ${RED}$totalFeesPaid${NC} in lightning fees but saved at least ${GREEN}$minimumFeesSaved${NC} by using lightning."
-if [[ $paidMoreThanSaved ]]; then
-   echo -e "${RED}You are currently spending more than you save${NC}"
+echo -e "You earned ${GREEN}$totalFeesEarned${NC} through routing."
+echo ""
+if [ $paidMoreThanSaved ]; then
+  echo -e "${RED}You might be spending more than you save!${NC}"
 else
-   echo -e "${GREEN}You are saving sats, keep it going!${NC}"
+  echo -e "${GREEN}You are most likely saving sats, keep it going!${NC}"
 fi
