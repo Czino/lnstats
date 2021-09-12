@@ -48,12 +48,12 @@ compactSats() {
   number="${1}"
   if [ "$number" -ge "$ONEMILLION" ]; then
     number=$((number / ONEMILLION))
-    number="${number}M sats"
+    number="${number}M SAT"
   elif [ "$number" -ge "$ONETHOUSAND" ]; then
       number=$((number / ONETHOUSAND))
-      number="${number}k sats"
+      number="${number}k SAT"
   else
-      number="$number sats"
+      number="$number SAT"
   fi
   echo "$number"
 }
