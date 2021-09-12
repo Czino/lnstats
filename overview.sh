@@ -1,5 +1,10 @@
 #! /usr/bin/env -S bash -e
 
+if ! which lncli > /dev/null; then
+    echo -e "\nPlease make sure 'lncli' is in your \$PATH. Exiting!"
+    exit 1
+fi
+
 MINIMUM_TX_SIZE=109 # in virtual bytes, assuming no change output
 MINIMUM_TX_SIZE_CHANNEL_OPENING=121 # in virtual bytes, assuming no change output
 
