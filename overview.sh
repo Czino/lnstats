@@ -38,10 +38,10 @@ ONEMILLION=$((ONETHOUSAND * 1000))
 compactBytes() {
   number="${1}"
   if [ "$number" -ge "$MEGABYTE" ]; then
-    number=$((number / MEGABYTE))
-    number="$number vMB"
+      number=$(printf "%.1f\n" "$(bc <<< "scale = 3; ${number}/${MEGABYTE}")")
+      number="$number vMB"
   elif [ "$number" -ge "$KILOBYTE" ]; then
-      number=$((number / KILOBYTE))
+      number=$(printf "%.1f\n" "$(bc <<< "scale = 3; ${number}/${KILOBYTE}")")
       number="$number vKB"
   else
       number="$number vB"
@@ -52,10 +52,10 @@ compactBytes() {
 compactSats() {
   number="${1}"
   if [ "$number" -ge "$ONEMILLION" ]; then
-    number=$((number / ONEMILLION))
-    number="${number}M SAT"
+      number=$(printf "%.1f\n" "$(bc <<< "scale = 3; ${number}/${ONEMILLION}")")
+      number="${number}M SAT"
   elif [ "$number" -ge "$ONETHOUSAND" ]; then
-      number=$((number / ONETHOUSAND))
+      number=$(printf "%.1f\n" "$(bc <<< "scale = 3; ${number}/${ONETHOUSAND}")")
       number="${number}k SAT"
   else
       number="$number SAT"
@@ -71,14 +71,14 @@ onchainFees=$(lncli listchaintxns | jq -r '.transactions | map(.total_fees | ton
 paymentAmount=$(echo "$payments" | jq -r length)
 totalFeesPaid=$(echo "$payments" | jq -r '. | map(.fee_sat | tonumber) | add')
 totalFeesEarned=$(("$(lncli fwdinghistory --max_events 10000 --start_time "-10y" | \
-                      jq -r '.forwarding_events | map(.fee_msat | tonumber) | add')" / 1000))
+                   jq -r '.forwarding_events | map(.fee_msat | tonumber) | add')" / ONETHOUSAND))
 channels=$(lncli listchannels | jq -r '[.channels[] | select(.initiator == true)]' | \
            jq -r length)
 closedChannels=$(lncli closedchannels | \
                  jq -r '[.channels[] | select(.open_initiator == "INITIATOR_LOCAL")]' | \
                  jq -r length)
 onchainTx=$((channels + closedChannels * 2))
-txPerOnchainTx=$((paymentAmount / onchainTx))
+txPerOnchainTx=$(printf "%.0f\n" "$(bc <<< "scale = 2; ${paymentAmount}/${onchainTx}")")
 minimumSpaceUsed=$((MINIMUM_TX_SIZE_CHANNEL_OPENING * onchainTx))
 minimumSpaceSaved=$((MINIMUM_TX_SIZE * paymentAmount - minimumSpaceUsed))
 minimumFeesSaved=$((paymentAmount * MINIMUM_TX_SIZE - minimumSpaceUsed))
