@@ -1,9 +1,10 @@
 #! /usr/bin/env -S bash -e
 
-NC='\033[0m' # No Color
-RED='\033[0m'
-GREEN='\033[0m'
-ORANGE='\033[0m'
+NC='\033[0m' # std format
+BOLD='\033[1m'
+RED="${NC}"
+GREEN="${NC}"
+ORANGE="${NC}"
 
 stop=false
 
@@ -18,9 +19,9 @@ _setArgs(){
         ;;
       "-c" | "--color")
         shift
-        RED='\033[0;31m'
-        GREEN='\033[0;32m'
-        ORANGE='\033[0;33m'
+        RED='\033[1;31m'
+        GREEN='\033[1;32m'
+        ORANGE='\033[1;33m'
         ;;
     esac
     shift
@@ -68,13 +69,18 @@ compactSats() {
   echo "$number"
 }
 
-payments=$(lncli listpayments --max_payments 9999 | jq -r '[.payments[] | select(.status == "SUCCEEDED")]')
+payments=$(lncli listpayments --max_payments 9999 | \
+           jq -r '[.payments[] | select(.status == "SUCCEEDED")]')
 onchainFees=$(lncli listchaintxns | jq -r '.transactions | map(.total_fees | tonumber) | add')
 paymentAmount=$(echo "$payments" | jq -r length)
 totalFeesPaid=$(echo "$payments" | jq -r '. | map(.fee_sat | tonumber) | add')
-totalFeesEarned=$(("$(lncli fwdinghistory --max_events 10000 --start_time "-10y" | jq -r '.forwarding_events | map(.fee_msat | tonumber) | add')"/1000))
-channels=$(lncli listchannels | jq -r '[.channels[] | select(.initiator == true)]' | jq -r length)
-closedChannels=$(lncli closedchannels | jq -r '[.channels[] | select(.open_initiator == "INITIATOR_LOCAL")]' | jq -r length)
+totalFeesEarned=$(("$(lncli fwdinghistory --max_events 10000 --start_time "-10y" | \
+                      jq -r '.forwarding_events | map(.fee_msat | tonumber) | add')" / 1000))
+channels=$(lncli listchannels | jq -r '[.channels[] | select(.initiator == true)]' | \
+           jq -r length)
+closedChannels=$(lncli closedchannels | \
+                 jq -r '[.channels[] | select(.open_initiator == "INITIATOR_LOCAL")]' | \
+                 jq -r length)
 onchainTx=$((channels + closedChannels * 2))
 txPerOnchainTx=$((paymentAmount / onchainTx))
 minimumSpaceUsed=$((MINIMUM_TX_SIZE_CHANNEL_OPENING * onchainTx))
@@ -97,17 +103,19 @@ minimumFeesSaved=$(compactSats "$minimumFeesSaved")
 onchainFees=$(compactSats "$onchainFees")
 balance=$(compactSats "$balance")
 
-echo -e "You opened ${ORANGE}$channels channels${NC}, closed ${RED}$closedChannels channels${NC}" \
-        "and made ${ORANGE}$paymentAmount lightning payments${NC} which results in" \
-        "${ORANGE}$txPerOnchainTx transactions${NC} per on-chain transaction."
-echo -e "You used at least ${RED}$minimumSpaceUsed${NC} block space but saved at least" \
-        "${GREEN}$minimumSpaceSaved${NC}."
-echo -e "You paid ${RED}$onchainFees${NC} on-chain and ${RED}$totalFeesPaid${NC} in lightning fees" \
-        "but saved at least ${GREEN}$minimumFeesSaved${NC} by using lightning."
-echo -e "You earned ${GREEN}$totalFeesEarned${NC} through routing.\n"
+echo -e "You opened ${GREEN}${channels} channels${NC}, closed${RED}" \
+        "${closedChannels} channels${NC}, and made ${ORANGE}${paymentAmount}" \
+        "Lightning payments${NC}, which implies ${ORANGE}$txPerOnchainTx"\
+        "transactions${NC} per on-chain transaction."
+echo -e "You used at least ${RED}${minimumSpaceUsed}${NC} block space," \
+        "but saved at least ${GREEN}${minimumSpaceSaved}${NC}."
+echo -e "You paid ${RED}${onchainFees}${NC} on-chain and${RED}" \
+        "${totalFeesPaid}${NC} in Lightning fees, but saved at least" \
+        "${GREEN}${minimumFeesSaved}${NC} by using Lightning."
+echo -e "You earned ${GREEN}${totalFeesEarned}${NC} through routing.\n"
 
 if [ $paidMoreThanSaved ]; then
-  echo -e "${RED}You might be spending more than you save!${NC}"
+  echo -e "${RED}You might be spending more than you save!${NC}\n"
 else
-  echo -e "${GREEN}You are most likely saving sats, keep it going!${NC}"
+  echo -e "${GREEN}You are most likely saving Sats, keep it going!${NC}\n"
 fi
