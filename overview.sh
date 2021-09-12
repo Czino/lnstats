@@ -105,7 +105,7 @@ echo -e "• You paid ${RED}${onchainFees}${NC} on-chain and${RED}" \
         "${GREEN}${minimumFeesSaved}${NC} by using Lightning."
 echo -e "• You earned ${GREEN}${totalFeesEarned}${NC} through routing.\n"
 
-if [ $paidMoreThanSaved ]; then
+if $paidMoreThanSaved; then
   echo -e "${RED}You might be spending more than you save!${NC}\n"
 else
   echo -e "${GREEN}You are most likely saving Sats, keep it going!${NC}\n"
