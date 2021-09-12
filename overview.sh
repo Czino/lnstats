@@ -70,6 +70,8 @@ compactSats() {
   echo "$number"
 }
 
+echo -e "\nTalking to lnd, this will take a few seconds ...\n"
+
 payments=$(lncli listpayments --max_payments 9999 | \
            jq -r '[.payments[] | select(.status == "SUCCEEDED")]')
 onchainFees=$(lncli listchaintxns | jq -r '.transactions | map(.total_fees | tonumber) | add')
