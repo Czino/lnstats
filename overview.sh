@@ -11,17 +11,17 @@ ORANGE="${NC}"
 
 for arg in "$@"; do
     case "$arg" in
-      "-h" | "--help")
-        echo -e "\n${BOLD}OPTIONS:${NC}"
-        echo -e "-h, --help\t show brief help"
-        echo -e "-c, --color\t (optional) add colors to output\n"
-        exit 0
-        ;;
-      "-c" | "--color")
-        RED='\033[1;31m'
-        GREEN='\033[1;32m'
-        ORANGE='\033[1;33m'
-        ;;
+        "-c" | "--color")
+            RED='\033[1;31m'
+            GREEN='\033[1;32m'
+            ORANGE='\033[1;33m'
+            ;;
+        *) # show help if not understood (includes -h / --help)
+            echo -e "\n${BOLD}OPTIONS:${NC}"
+            echo -e "-h, --help\t show brief help"
+            echo -e "-c, --color\t (optional) add colors to output\n"
+            exit 0
+            ;;
     esac
 done
 
