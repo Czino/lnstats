@@ -9,33 +9,21 @@ RED="${NC}"
 GREEN="${NC}"
 ORANGE="${NC}"
 
-stop=false
-
-_setArgs(){
-  while [ "$1" != "" ]; do
-    case $1 in
+for arg in "$@"; do
+    case "$arg" in
       "-h" | "--help")
-        echo "options:"
-        echo "-h, --help         show brief help"
-        echo "-c, --color    (optional) add colors to output"
-        stop=true
+        echo -e "\n${BOLD}OPTIONS:${NC}"
+        echo -e "-h, --help\t show brief help"
+        echo -e "-c, --color\t (optional) add colors to output\n"
+        exit 0
         ;;
       "-c" | "--color")
-        shift
         RED='\033[1;31m'
         GREEN='\033[1;32m'
         ORANGE='\033[1;33m'
         ;;
     esac
-    shift
-  done
-}
-
-_setArgs "$*"
-
-if "$stop"; then
-  return
-fi
+done
 
 KILOBYTE=1024
 MEGABYTE=$((KILOBYTE * 1024))
