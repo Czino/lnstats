@@ -97,7 +97,7 @@ balance=$(compactSats "$balance")
 echo -e "• You opened ${GREEN}${channels} channels${NC}, closed${RED}" \
         "${closedChannels} channels${NC}, and made ${ORANGE}${paymentAmount}" \
         "Lightning payments${NC}, which implies ${ORANGE}$txPerOnchainTx"\
-        "transactions${NC} per on-chain transaction."
+        "payments${NC} per on-chain transaction."
 echo -e "• You used at least ${RED}${minimumSpaceUsed}${NC} block space," \
         "but saved at least ${GREEN}${minimumSpaceSaved}${NC}."
 echo -e "• You paid ${RED}${onchainFees}${NC} on-chain and${RED}" \
