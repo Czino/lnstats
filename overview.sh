@@ -1,5 +1,8 @@
 #! /usr/bin/env -S bash -e
 
+MINIMUM_TX_SIZE=109 # in virtual bytes, assuming no change output
+MINIMUM_TX_SIZE_CHANNEL_OPENING=121 # in virtual bytes, assuming no change output
+
 NC='\033[0m' # std format
 BOLD='\033[1m'
 RED="${NC}"
@@ -34,12 +37,10 @@ if "$stop"; then
   return
 fi
 
-MINIMUM_TX_SIZE=109 # in virtual bytes, assuming no change output
-MINIMUM_TX_SIZE_CHANNEL_OPENING=121 # in virtual bytes, assuming no change output
 KILOBYTE=1024
-MEGABYTE=$((1024 * 1024))
-ONEMILLION=1000000
+MEGABYTE=$((KILOBYTE * 1024))
 ONETHOUSAND=1000
+ONEMILLION=$((ONETHOUSAND * 1000))
 
 compactBytes() {
   number="${1}"
