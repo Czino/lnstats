@@ -94,16 +94,16 @@ minimumFeesSaved=$(compactSats "$minimumFeesSaved")
 onchainFees=$(compactSats "$onchainFees")
 balance=$(compactSats "$balance")
 
-echo -e "You opened ${GREEN}${channels} channels${NC}, closed${RED}" \
+echo -e "• You opened ${GREEN}${channels} channels${NC}, closed${RED}" \
         "${closedChannels} channels${NC}, and made ${ORANGE}${paymentAmount}" \
         "Lightning payments${NC}, which implies ${ORANGE}$txPerOnchainTx"\
         "transactions${NC} per on-chain transaction."
-echo -e "You used at least ${RED}${minimumSpaceUsed}${NC} block space," \
+echo -e "• You used at least ${RED}${minimumSpaceUsed}${NC} block space," \
         "but saved at least ${GREEN}${minimumSpaceSaved}${NC}."
-echo -e "You paid ${RED}${onchainFees}${NC} on-chain and${RED}" \
+echo -e "• You paid ${RED}${onchainFees}${NC} on-chain and${RED}" \
         "${totalFeesPaid}${NC} in Lightning fees, but saved at least" \
         "${GREEN}${minimumFeesSaved}${NC} by using Lightning."
-echo -e "You earned ${GREEN}${totalFeesEarned}${NC} through routing.\n"
+echo -e "• You earned ${GREEN}${totalFeesEarned}${NC} through routing.\n"
 
 if [ $paidMoreThanSaved ]; then
   echo -e "${RED}You might be spending more than you save!${NC}\n"
