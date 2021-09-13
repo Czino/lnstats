@@ -10,9 +10,9 @@ MINIMUM_TX_SIZE_CHANNEL_OPENING=121 # in virtual bytes, assuming no change outpu
 
 NC='\033[0m' # std format
 BOLD='\033[1m'
-RED="${NC}"
-GREEN="${NC}"
-ORANGE="${NC}"
+RED="${BOLD}"
+GREEN="${BOLD}"
+ORANGE="${BOLD}"
 
 for arg in "$@"; do
     case "$arg" in
