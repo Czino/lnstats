@@ -66,18 +66,19 @@ compactSats() {
 echo -e "\nTalking to lnd, this will take a few seconds ...\n"
 
 payments=$(lncli listpayments --max_payments 9999 | \
-           jq -r '[.payments[] | select(.status == "SUCCEEDED")]')
+    jq -r '[.payments[] | select(.status == "SUCCEEDED")]')
 onchainFees=$(lncli listchaintxns | jq -r '.transactions | map(.total_fees | tonumber) | add')
 paymentAmount=$(echo "$payments" | jq -r length)
 totalFeesPaid=$(echo "$payments" | jq -r '. | map(.fee_sat | tonumber) | add')
 totalFeesEarned=$(("$(lncli fwdinghistory --max_events 10000 --start_time "-10y" | \
-                   jq -r '.forwarding_events | map(.fee_msat | tonumber) | add')" / ONETHOUSAND))
-channels=$(lncli listchannels | jq -r '[.channels[] | select(.initiator == true)]' | \
-           jq -r length)
-closedChannels=$(lncli closedchannels | \
-                 jq -r '[.channels[] | select(.open_initiator == "INITIATOR_LOCAL")]' | \
-                 jq -r length)
-onchainTx=$((channels + closedChannels * 2))
+    jq -r '.forwarding_events | map(.fee_msat | tonumber) | add')" / ONETHOUSAND))
+initiatedChansOpen=$(lncli listchannels | jq -r '[.channels[] | select(.initiator == true)]' | \
+    jq -r length)
+initiatedChansDead=$(lncli closedchannels | \
+    jq -r '[.channels[] | select(.open_initiator == "INITIATOR_LOCAL")]' | \
+    jq -r length)
+initiatedChans=$((initiatedChansOpen + initiatedChansDead))
+onchainTx=$((initiatedChansOpen + initiatedChansDead * 2))
 txPerOnchainTx=$(printf "%.0f\n" "$(bc <<< "scale = 2; ${paymentAmount}/${onchainTx}")")
 minimumSpaceUsed=$((MINIMUM_TX_SIZE_CHANNEL_OPENING * onchainTx))
 minimumSpaceSaved=$((MINIMUM_TX_SIZE * paymentAmount - minimumSpaceUsed))
@@ -99,10 +100,10 @@ minimumFeesSaved=$(compactSats "$minimumFeesSaved")
 onchainFees=$(compactSats "$onchainFees")
 balance=$(compactSats "$balance")
 
-echo -e "• You opened ${GREEN}${channels} channels${NC}, closed${RED}" \
-        "${closedChannels} channels${NC}, and made ${ORANGE}${paymentAmount}" \
-        "Lightning payments${NC}, which implies ${ORANGE}$txPerOnchainTx"\
-        "payments${NC} per on-chain transaction."
+echo -e "• You opened ${GREEN}${initiatedChans} channels${NC}, out of which" \
+        "${RED}${initiatedChansDead} are now closed${NC}, and you made" \
+        "${ORANGE}${paymentAmount} Lightning payments${NC}, which implies" \
+        "${ORANGE}${txPerOnchainTx} payments${NC} per on-chain transaction."
 echo -e "• You used at least ${RED}${minimumSpaceUsed}${NC} block space," \
         "but saved at least ${GREEN}${minimumSpaceSaved}${NC}."
 echo -e "• You paid ${RED}${onchainFees}${NC} on-chain and${RED}" \
