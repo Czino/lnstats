@@ -8,27 +8,52 @@ fi
 MINIMUM_TX_SIZE=109 # in virtual bytes, assuming no change output
 MINIMUM_TX_SIZE_CHANNEL_OPENING=121 # in virtual bytes, assuming no change output
 
-NC='\033[0m' # std format
-BOLD='\033[1m'
-RED="${BOLD}"
-GREEN="${BOLD}"
-ORANGE="${BOLD}"
+NC="$(tput sgr0)" # std format
+BOLD="$(tput bold)"
 
 for arg in "$@"; do
     case "$arg" in
         "-c" | "--color")
-            RED='\033[1;31m'
-            GREEN='\033[1;32m'
-            ORANGE='\033[1;33m'
+            use_colors="full"
+            ;;
+        "-nc" | "--nocolor")
+            use_colors="bold"
             ;;
         *) # show help if not understood (includes -h / --help)
-            echo -e "\n${BOLD}OPTIONS:${NC}"
-            echo -e "-h, --help\t show brief help"
-            echo -e "-c, --color\t (optional) add colors to output\n"
+            echo -en "\n${BOLD}Usage:${NC}" \
+                     "\n${0} [options]\n" \
+                     "\n${BOLD}OPTIONS:${NC}" \
+                     "\n-h, --help\t show brief help" \
+                     "\n-c, --color\t (default if supported) colorize output" \
+                     "\n-nc, --nocolor\t remove colors from output\n\n"
             exit 0
             ;;
     esac
 done
+
+# check if stdout is a terminal
+if [ -z "${use_colors}" ]; then
+    use_colors="no"
+    if test -t 1; then
+        # see if it supports colors
+        ncolors=$(tput colors)
+        if test -n "${ncolors}" && test "${ncolors}" -ge 8; then
+            use_colors="full"
+        else
+            use_colors="bold"
+        fi
+    fi
+fi
+
+if [ "${use_colors}" == 'full' ]; then
+    RED="$(tput bold; tput setaf 1)"
+    GREEN="$(tput bold; tput setaf 2)"
+    ORANGE="$(tput bold; tput setaf 3)"
+elif [ "${use_colors}" == 'bold' ]; then
+    RED="${BOLD}"; GREEN="${BOLD}"; ORANGE="${BOLD}"
+else
+    NC=""; BOLD=""; RED=""; GREEN=""; ORANGE=""
+fi
 
 KILOBYTE=1024
 MEGABYTE=$((KILOBYTE * 1024))
